@@ -3,6 +3,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
 from dash.dependencies import Input, Output, State
 import dash_cytoscape as cyto
 import numpy as np
@@ -47,14 +48,27 @@ pickleFile = open("mushroom_rfmodel.pkl", 'rb')
 best_model = pickle.load(pickleFile)
 pickleFile.close()
 
+# Load data
+pickleFile = open("clean_mushroom_data.pkl", 'rb')
+mushrooms = pickle.load(pickleFile)
+pickleFile.close()
 
 column1 = dbc.Col(
     [
-        
+    dash_table.DataTable(
+    id='table',
+    columns=[{"name": i, "id": i} for i in mushrooms.columns],
+    data=mushrooms.to_dict('records'),
+    style_table={
+        'maxHeight': '500px',
+        'overflowY': 'scroll'
+    },
+    fixed_rows={ 'headers': True, 'data': 0 },
+    style_cell={'width': '75px'},
+    ),
     ],
     md=4,
 )
-
 
 # Create cytoscape elements
 decision_tree_elements = generate_cyto_elements(np.random.choice(best_model.estimators_))
