@@ -1,9 +1,13 @@
+import pickle
 import dash
+import pandas as pd
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
+import plotly.graph_objects as go
+
 
 from app import app
 
@@ -43,9 +47,69 @@ column1 = dbc.Col(
     md=4,
 )
 
-gapminder = px.data.gapminder()
-fig = px.scatter(gapminder.query("year==2007"), x="gdpPercap", y="lifeExp", size="pop", color="continent",
-           hover_name="country", log_x=True, size_max=60)
+# Load data
+pickleFile = open("assets/clean_mushroom_data.pkl", 'rb')
+mushrooms = pickle.load(pickleFile)
+pickleFile.close()
+
+pickleFile = open("assets/3d_feature_embeddings.pkl", 'rb')
+embeddings = pickle.load(pickleFile)
+pickleFile.close()
+
+y = mushrooms['class'].replace({'p':0, 'e':1})
+
+data = pd.DataFrame(embeddings)
+data['class'] = y
+data.columns = ['comp_1', 'comp_2', 'comp_3', 'class']
+data = data.sample(frac = .25)
+
+poison = data[data['class'] == 0]
+edible = data[data['class'] == 1]
+
+fig = go.Figure()
+
+fig.add_trace(
+    go.Scatter3d(
+        x=poison['comp_1'], y=poison['comp_2'], z=poison['comp_3'],
+        name = 'Poison',
+        mode='markers',
+        marker=dict(
+            size=4,
+            color='#ff005e',
+            opacity=0.9,
+            line=dict(
+                    color='rgba(0, 0, 0, 0.5)',
+                    width=1,
+            )
+        ),
+    )
+)
+
+fig.add_trace(go.Scatter3d(
+    x=edible['comp_1'], y=edible['comp_2'], z=edible['comp_3'],
+    name = 'Edible',
+    mode='markers',
+    marker=dict(
+        size=4,
+        color='#00ffe8',
+        opacity=0.9,
+        line=dict(
+                color='rgba(0, 0, 0, 0.5)',
+                width=1,
+        )
+    )
+))
+
+camera = dict(
+    up=dict(x=0, y=1, z=1),
+    center=dict(x=0, y=0, z=0),
+    eye=dict(x=1, y=1, z=.05)
+)
+
+
+fig.update_layout(showlegend=True)
+fig.update_layout(scene_camera=camera)
+
 
 column2 = dbc.Col(
     [

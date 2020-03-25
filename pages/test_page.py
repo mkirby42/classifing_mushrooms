@@ -67,12 +67,12 @@ def generate_cyto_elements(estimator, data, sample_index = 0):
 
 
 # Load model
-pickleFile = open("mushroom_rfmodel.pkl", 'rb')
+pickleFile = open("assets/vanilla_decision_tree.pkl", 'rb')
 best_model = pickle.load(pickleFile)
 pickleFile.close()
 
 # Load data
-pickleFile = open("clean_mushroom_data.pkl", 'rb')
+pickleFile = open("assets/clean_mushroom_data.pkl", 'rb')
 mushrooms = pickle.load(pickleFile)
 pickleFile.close()
 
@@ -119,7 +119,7 @@ column2 = dbc.Col([html.Div([
     cyto.Cytoscape(
         id='cytoscape-layout-4',
         elements=generate_cyto_elements(
-            np.random.choice(best_model.estimators_),
+            best_model,
             X_test,
             0,
             ),
@@ -163,13 +163,13 @@ column2 = dbc.Col([html.Div([
 def f(rows, selected_rows, elements):
     if len(selected_rows) > 0:
         elements = generate_cyto_elements(
-            np.random.choice(best_model.estimators_),
+            best_model,
             X_test,
             selected_rows[0],
         )
     else:
         elements = generate_cyto_elements(
-            np.random.choice(best_model.estimators_),
+            best_model,
             X_test,
             0,
         )

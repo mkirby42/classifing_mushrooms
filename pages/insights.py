@@ -66,12 +66,12 @@ def generate_cyto_elements(estimator, data, sample_index = 0):
 
 
 # Load model
-pickleFile = open("mushroom_rfmodel.pkl", 'rb')
+pickleFile = open("assets/vanilla_decision_tree.pkl", 'rb')
 best_model = pickle.load(pickleFile)
 pickleFile.close()
 
 # Load data
-pickleFile = open("clean_mushroom_data.pkl", 'rb')
+pickleFile = open("assets/clean_mushroom_data.pkl", 'rb')
 mushrooms = pickle.load(pickleFile)
 pickleFile.close()
 
@@ -109,7 +109,7 @@ column1 = dbc.Col(
 
 # Create cytoscape elements
 decision_tree_elements = generate_cyto_elements(
-    np.random.choice(best_model.estimators_),
+    best_model,
     X_test,
     np.random.choice(range(len(X_test))),
     )

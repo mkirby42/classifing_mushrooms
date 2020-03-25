@@ -11,12 +11,12 @@ from dash.dependencies import Input, Output, State
 from app import app
 
 # Load data
-pickleFile = open("clean_mushroom_data.pkl", 'rb')
+pickleFile = open("assets/clean_mushroom_data.pkl", 'rb')
 mushrooms = pickle.load(pickleFile)
 pickleFile.close()
 
 # Load feature embeddings
-pickleFile = open("feature_embeddings.pkl", 'rb')
+pickleFile = open("assets/feature_embeddings.pkl", 'rb')
 X_embedded = pickle.load(pickleFile)
 pickleFile.close()
 
