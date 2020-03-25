@@ -1,19 +1,20 @@
 import pickle
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 from dash.dependencies import Input, Output, State
+import dash_table
 import dash_cytoscape as cyto
-import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 import category_encoders as ce
 from sklearn.model_selection import train_test_split
 
 from app import app
-
 # Load extra layouts
 cyto.load_extra_layouts()
 
@@ -83,76 +84,104 @@ y = mushrooms['class'].replace({'p':0, 'e':1})
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42,
                                                     test_size=.2, stratify=y)
-
+show_df = X_test.copy()
+show_df['prediction'] = best_model.predict(X_test)
+show_df['prediction'] = show_df['prediction'].replace({0:'Poison', 1:'Edible'})
+show_df['class'] = y_test.replace({0:'Poison', 1:'Edible'})
+show_df = show_df.reset_index()
+show_df = show_df[['index', 'class', 'prediction']]
 
 column1 = dbc.Col(
     [
     dash_table.DataTable(
         id='table',
-        columns=[{"name": i, "id": i} for i in mushrooms.columns],
-        data=mushrooms.to_dict('records'),
+        columns=[{"name": i, "id": i} for i in show_df.columns],
+        data=show_df.to_dict('records'),
         style_table={
-            'maxHeight': '500px',
+            'maxHeight': '300px',
             'overflowY': 'scroll'
         },
         fixed_rows={ 'headers': True, 'data': 0 },
-        style_cell={'width': '75px'},
+        style_cell={'width': '60px'},
         row_selectable="single",
         selected_rows=[],
         page_action="native",
         page_current= 0,
-        page_size= 10,
-    )
+        page_size= 9,
+    ),
+    html.Div(id='div-out'),
+    html.Div(id='div-out_2'),
+
     ],
-    md=4,
 )
 
-# Create cytoscape elements
-decision_tree_elements = generate_cyto_elements(
-    np.random.choice(best_model.estimators_),
-    X_test,
-    np.random.choice(range(len(X_test))),
-    )
-
-
-column2 = dbc.Col(
-    [
-    html.Div([
-        cyto.Cytoscape(
-            id='cytoscape-layout-4',
-            elements=decision_tree_elements,
-            style={'width': '100%', 'height': '800px'},
-            layout={
-                'name': 'dagre'
-            },
-            stylesheet=[
-                # Group selectors
-                {
-                    'selector': 'node',
-                    'style': {
-                        'content': 'data(label)'
-                    }
-                },
-
-                # Class selectors
-                {
-                    'selector': '.node_color',
-                    'style': {
-                        'background-color': 'red',
-                        'line-color': 'black'
-                    }
-                },
-                {
-                    'selector': '.decision_node',
-                    'style': {
-                        'background-color': 'blue',
-                        'line-color': 'black'
-                    }
+column2 = dbc.Col([html.Div([
+    cyto.Cytoscape(
+        id='cytoscape-layout-4',
+        elements=generate_cyto_elements(
+            np.random.choice(best_model.estimators_),
+            X_test,
+            0,
+            ),
+        style={'width': '100%', 'height': '300px'},
+        layout={
+            'name': 'dagre'
+        },
+        stylesheet=[
+            # Group selectors
+            {
+                'selector': 'node',
+                'style': {
+                    'content': 'data(label)'
                 }
-            ]
+            },
+
+            # Class selectors
+            {
+                'selector': '.node_color',
+                'style': {
+                    'background-color': 'red',
+                    'line-color': 'black'
+                }
+            },
+            {
+                'selector': '.decision_node',
+                'style': {
+                    'background-color': 'blue',
+                    'line-color': 'black'
+                }
+            }
+        ]
+    )
+])])
+
+@app.callback(
+    Output('cytoscape-layout-4','elements'),
+    [Input('table', 'rows'),
+     Input('table', 'selected_rows')],
+    [State('cytoscape-layout-4', 'elements')])
+def f(rows, selected_rows, elements):
+    if len(selected_rows) > 0:
+        elements = generate_cyto_elements(
+            np.random.choice(best_model.estimators_),
+            X_test,
+            selected_rows[0],
         )
-    ]),
-    ]
-)
+    else:
+        elements = generate_cyto_elements(
+            np.random.choice(best_model.estimators_),
+            X_test,
+            0,
+        )
+    return elements
+
+
+@app.callback(
+    Output('div-out','children'),
+    [Input('table', 'rows'),
+     Input('table', 'selected_rows')],
+    )
+def f(rows, selected_rows):
+    return selected_rows
 
 layout = dbc.Row([column1, column2])
