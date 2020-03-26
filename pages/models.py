@@ -69,9 +69,10 @@ column1 = dbc.Col(
 
             We can use decision trees to clasifiy mushrooms based on physical characteristics such as gill size, stalk length, and spore print color.
 
-            These models utilize precision the preformance metric becausewe wish to minimize false positives for the edible class, that is poisoniousmushrooms classified as edible.
+            These models utilize precision as their preformance metric because we wish to minimize false positives for the edible class, that is poisonious mushrooms classified as edible.
 
             With a decision stump, a decision tree with a node depth of one, we can view the single feature which is most useful for our classification task: no odor.
+            With decision trees of increasing depth our decision paths become more complex and our model is able to classify more accuratly. 
 
             """
         ),

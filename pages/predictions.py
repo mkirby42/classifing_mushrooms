@@ -38,17 +38,19 @@ def generate_cyto_elements(estimator, data, sample_index = 0):
     elements = []
     for node in range(n_nodes):
         if (data.values[sample_index, feature[node]] <= threshold[node]):
-            threshold_sign = "<="
+            threshold_sign = "False"
         else:
-            threshold_sign = ">"
+            threshold_sign = "True"
 
         # Format decision string
-        if feature[node] == -2:
-          lab = 'Decision'
+        if (feature[node] == -2) & (node in decision_nodes):
+            sample = data.iloc[sample_index].values.reshape(1, -1)
+            lab = str(estimator.predict(sample))
+        elif feature[node] == -2:
+            lab = ' '
         else:
-          lab = "%s %s %s (%s)" %(list(data.columns)[feature[node]],
+            lab = "%s %s (%s)" %(list(data.columns)[feature[node]],
                                   threshold_sign,
-                                  threshold[node],
                                   data.values[sample_index, feature[node]]
                                   )
 
@@ -95,23 +97,12 @@ show_df = show_df[['index', 'class', 'prediction']]
 
 column1 = dbc.Col(
     [
-    dcc.Markdown(
-        """#### Select Model"""
-    ),
-    dcc.Dropdown(
-        id = 'model_selection_dropdown',
-        options=[
-            {'label': 'Decision Stump', 'value': 'decision_stump'},
-            {'label': 'Decision Tree (Depth: 2)', 'value': 'vanilla_decision_tree'},
-            {'label': 'Decision Tree (Depth: 3)', 'value': 'vanilla_forest'},
-            {'label': 'Decision Tree (Depth: 4)', 'value': 'opto_forest'},
-            {'label': 'Optomized Decision Tree', 'value': 'opto_decision_tree'},
-        ],
-        value= 'decision_stump'
-    ),
     html.Div(
         id = 'div_1',
         style={'marginBottom': 25, 'marginTop': 25}
+    ),
+    dcc.Markdown(
+        """#### Select a Data Point"""
     ),
     dash_table.DataTable(
         id='table',
@@ -142,45 +133,67 @@ def update_output(value):
     cols = [{"name": i, "id": i} for i in data.columns]
     return cols, data.to_dict('records')
 
-column2 = dbc.Col([html.Div([
+column2 = dbc.Col(
+    [
+    html.Div(
+        id = 'div_2',
+        style={'marginBottom': 25, 'marginTop': 25}
+    ),
     cyto.Cytoscape(
-        id='cytoscape-layout-4',
-        elements=generate_cyto_elements(
-            models['decision_stump'],
-            X_test,
-            0,
-            ),
-        style={'width': '100%', 'height': '300px'},
-        layout={
-            'name': 'dagre'
-        },
-        stylesheet=[
-            # Group selectors
-            {
-                'selector': 'node',
-                'style': {
-                    'content': 'data(label)'
-                }
+            id='cytoscape-layout-4',
+            elements=generate_cyto_elements(
+                models['decision_stump'],
+                X_test,
+                0,
+                ),
+            style={'width': '100%', 'height': '400px'},
+            layout={
+                'name': 'dagre',
+                'spacingFactor': '1'
             },
+            stylesheet=[
+                # Group selectors
+                {
+                    'selector': 'node',
+                    'style': {
+                        'content': 'data(label)',
+                        'text-halign': 'left',
+                        'font-size': '10'
+                    }
+                },
 
-            # Class selectors
-            {
-                'selector': '.node_color',
-                'style': {
-                    'background-color': 'red',
-                    'line-color': 'black'
+                # Class selectors
+                {
+                    'selector': '.node_color',
+                    'style': {
+                        'background-color': 'red',
+                        'line-color': 'black'
+                    }
+                },
+                {
+                    'selector': '.decision_node',
+                    'style': {
+                        'background-color': 'blue',
+                        'line-color': 'black'
+                    }
                 }
-            },
-            {
-                'selector': '.decision_node',
-                'style': {
-                    'background-color': 'blue',
-                    'line-color': 'black'
-                }
-            }
-        ]
-    )
-])])
+            ],
+        ),
+        dcc.Markdown(
+            """#### Select Model"""
+        ),
+        dcc.Dropdown(
+            id = 'model_selection_dropdown',
+            options=[
+                {'label': 'Decision Stump', 'value': 'decision_stump'},
+                {'label': 'Decision Tree (Depth: 2)', 'value': 'vanilla_decision_tree'},
+                {'label': 'Decision Tree (Depth: 3)', 'value': 'vanilla_forest'},
+                {'label': 'Decision Tree (Depth: 4)', 'value': 'opto_forest'},
+                {'label': 'Optomized Decision Tree', 'value': 'opto_decision_tree'},
+            ],
+            value= 'decision_stump'
+        ),
+])
 
 
 @app.callback(
