@@ -37,12 +37,12 @@ column1 = dbc.Col(
 
             The Lepitoa genus of mushrooms can be difficult to label as either edible or poisonious.
 
-            We've devloped a model which can classify Lepitoa mushrooms as
-            edible or poisonious with astounding accuracy based on some easily
+            We've used scikit-learn to devlop a model which can classify Lepitoa mushrooms as
+            edible or poisonious with astounding precision based on some easily
             observable physical characteristics.
             """
         ),
-        dcc.Link(dbc.Button('See More', color='primary'), href='/predictions')
+        dcc.Link(dbc.Button('See More', color='primary'), href='/models')
     ],
     md=4,
 )
@@ -61,7 +61,7 @@ y = mushrooms['class'].replace({'p':0, 'e':1})
 data = pd.DataFrame(embeddings)
 data['class'] = y
 data.columns = ['comp_1', 'comp_2', 'comp_3', 'class']
-data = data.sample(frac = .25)
+data = data.sample(frac = .1)
 
 poison = data[data['class'] == 0]
 edible = data[data['class'] == 1]

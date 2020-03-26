@@ -15,8 +15,15 @@ import category_encoders as ce
 from sklearn.model_selection import train_test_split
 
 from app import app
-# Load extra layouts
 cyto.load_extra_layouts()
+
+
+def load_pickle(filepath):
+    pickleFile = open(filepath, 'rb')
+    obj = pickle.load(pickleFile)
+    pickleFile.close()
+    return obj
+
 
 def generate_cyto_elements(estimator, data, sample_index = 0):
     n_nodes = estimator.tree_.node_count
@@ -65,34 +72,47 @@ def generate_cyto_elements(estimator, data, sample_index = 0):
 
     return elements
 
+# Load models
+models = {}
+models['decision_stump'] = load_pickle("assets/decision_stump.pkl")
+models['vanilla_decision_tree'] = load_pickle("assets/vanilla_decision_tree.pkl")
+models['opto_decision_tree'] = load_pickle("assets/opto_decision_tree.pkl")
+models['vanilla_forest'] = load_pickle("assets/vanilla_forest.pkl")
+models['opto_forest'] = load_pickle("assets/opto_forest.pkl")
 
-# Load model
-pickleFile = open("assets/vanilla_decision_tree.pkl", 'rb')
-best_model = pickle.load(pickleFile)
-pickleFile.close()
+X_test = load_pickle("assets/X_test.pkl")
+y_test = load_pickle("assets/y_test.pkl")
 
-# Load data
-pickleFile = open("assets/clean_mushroom_data.pkl", 'rb')
-mushrooms = pickle.load(pickleFile)
-pickleFile.close()
 
-# Format features, targets
-X = mushrooms.drop(columns='class')
-X = ce.OneHotEncoder(use_cat_names=True).fit_transform(X)
-y = mushrooms['class'].replace({'p':0, 'e':1})
-
-# Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42,
-                                                    test_size=.2, stratify=y)
+# Format data for display
 show_df = X_test.copy()
-show_df['prediction'] = best_model.predict(X_test)
+show_df['prediction'] = models['opto_decision_tree'].predict(X_test)
 show_df['prediction'] = show_df['prediction'].replace({0:'Poison', 1:'Edible'})
 show_df['class'] = y_test.replace({0:'Poison', 1:'Edible'})
 show_df = show_df.reset_index()
 show_df = show_df[['index', 'class', 'prediction']]
 
+
 column1 = dbc.Col(
     [
+    dcc.Markdown(
+        """#### Select Model"""
+    ),
+    dcc.Dropdown(
+        id = 'model_selection_dropdown',
+        options=[
+            {'label': 'Decision Stump', 'value': 'decision_stump'},
+            {'label': 'Decision Tree (Depth: 2)', 'value': 'vanilla_decision_tree'},
+            {'label': 'Decision Tree (Depth: 3)', 'value': 'vanilla_forest'},
+            {'label': 'Decision Tree (Depth: 4)', 'value': 'opto_forest'},
+            {'label': 'Optomized Decision Tree', 'value': 'opto_decision_tree'},
+        ],
+        value= 'decision_stump'
+    ),
+    html.Div(
+        id = 'div_1',
+        style={'marginBottom': 25, 'marginTop': 25}
+    ),
     dash_table.DataTable(
         id='table',
         columns=[{"name": i, "id": i} for i in show_df.columns],
@@ -109,17 +129,24 @@ column1 = dbc.Col(
         page_current= 0,
         page_size= 9,
     ),
-    html.Div(id='div-out'),
-    html.Div(id='div-out_2'),
-
     ],
 )
+
+@app.callback(
+    [Output('table', 'columns'),
+    Output('table', 'data')],
+    [Input('model_selection_dropdown', 'value')])
+def update_output(value):
+    data = show_df.drop(columns = ['prediction'])
+    data['prediction'] = models[value].predict(X_test)
+    cols = [{"name": i, "id": i} for i in data.columns]
+    return cols, data.to_dict('records')
 
 column2 = dbc.Col([html.Div([
     cyto.Cytoscape(
         id='cytoscape-layout-4',
         elements=generate_cyto_elements(
-            best_model,
+            models['decision_stump'],
             X_test,
             0,
             ),
@@ -155,33 +182,27 @@ column2 = dbc.Col([html.Div([
     )
 ])])
 
+
 @app.callback(
     Output('cytoscape-layout-4','elements'),
     [Input('table', 'rows'),
-     Input('table', 'selected_rows')],
+     Input('table', 'selected_rows'),
+     Input('model_selection_dropdown', 'value')],
     [State('cytoscape-layout-4', 'elements')])
-def f(rows, selected_rows, elements):
+def f(rows, selected_rows, value, elements):
     if len(selected_rows) > 0:
         elements = generate_cyto_elements(
-            best_model,
+            models[value],
             X_test,
             selected_rows[0],
         )
     else:
         elements = generate_cyto_elements(
-            best_model,
+            models[value],
             X_test,
             0,
         )
     return elements
 
-
-@app.callback(
-    Output('div-out','children'),
-    [Input('table', 'rows'),
-     Input('table', 'selected_rows')],
-    )
-def f(rows, selected_rows):
-    return selected_rows
 
 layout = dbc.Row([column1, column2])
