@@ -33,13 +33,18 @@ column1 = dbc.Col(
         dcc.Markdown(
             """
 
-            ## Edible or Poisonious?
+            ## Edible or Poisonous?
 
-            The Lepitoa genus of mushrooms can be difficult to label as either edible or poisonious.
+            The Lepitoa genus of mushrooms can be difficult to label as either edible or Poisonous.
 
-            We've used scikit-learn to devlop a model which can classify Lepitoa mushrooms as
-            edible or poisonious with astounding precision based on some easily
+            We've used scikit-learn to develop a model which can classify Lepitoa mushrooms as
+            edible or poisonous with astounding precision based on some easily
             observable physical characteristics.
+
+            The figure on the right utilizes t-distributed stochastic neighbor
+            embeddings (T-SNE) to create a 3-dimensional representation of
+            over 90 different physical characteristics from a randomly sampled
+            subset of our data.
             """
         ),
         dcc.Link(dbc.Button('See More', color='primary'), href='/models')
@@ -107,13 +112,13 @@ camera = dict(
 )
 
 
-fig.update_layout(showlegend=True)
-fig.update_layout(scene_camera=camera)
+fig.update_layout(showlegend = True)
+fig.update_layout(scene_camera = camera)
 
 
 column2 = dbc.Col(
     [
-        dcc.Graph(figure=fig),
+        dcc.Graph(figure = fig, config = {'displayModeBar': True}),
     ]
 )
 

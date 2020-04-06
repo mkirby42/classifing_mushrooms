@@ -88,53 +88,55 @@ y_test = load_pickle("assets/y_test.pkl")
 
 # Format data for display
 show_df = X_test.copy()
-show_df['prediction'] = models['opto_decision_tree'].predict(X_test)
-show_df['prediction'] = show_df['prediction'].replace({0:'Poison', 1:'Edible'})
-show_df['class'] = y_test.replace({0:'Poison', 1:'Edible'})
+show_df['Prediction'] = models['opto_decision_tree'].predict(X_test)
+show_df['Prediction'] = show_df['Prediction'].replace({0:'Poison', 1:'Edible'})
+show_df['Class'] = y_test.replace({0:'Poison', 1:'Edible'})
+show_df['Prediction Correct ?'] = show_df.apply(lambda row: row.Class == row.Prediction, axis = 1)
 show_df = show_df.reset_index()
-show_df = show_df[['index', 'class', 'prediction']]
+show_df = show_df[['index', 'Class', 'Prediction', 'Prediction Correct ?']]
 
 
 column1 = dbc.Col(
+    [
+    dcc.Markdown(
+        """
+
+        # Decision Tree Visualization
+
+        With a decision stump, a decision tree with a node depth of one, we can identify the single feature which is most useful for our classification task: no odor.
+        With decision trees of increasing depth our decision paths become more complex and our model is able to classify more accurately.
+
+        """
+    ),
+    html.Div(
+        id = 'div_1',
+        style={'marginBottom': 25, 'marginTop': 25}
+    ),
+    html.Button('Generate New Random Test Set Sample', id = 'button'),
+    ], width = 'auto',
+)
+
+
+column2 = dbc.Col(
     [
     html.Div(
         id = 'div_1',
         style={'marginBottom': 25, 'marginTop': 25}
     ),
     dcc.Markdown(
-        """#### Select a Data Point"""
+        """#### Select Model"""
     ),
-    dash_table.DataTable(
-        id='table',
-        columns=[{"name": i, "id": i} for i in show_df.columns],
-        data=show_df.to_dict('records'),
-        style_table={
-            'maxHeight': '300px',
-            'overflowY': 'scroll'
-        },
-        fixed_rows={ 'headers': True, 'data': 0 },
-        style_cell={'width': '60px'},
-        row_selectable="single",
-        selected_rows=[],
-        page_action="native",
-        page_current= 0,
-        page_size= 9,
+    dcc.Dropdown(
+        id = 'model_selection_dropdown',
+        options=[
+            {'label': 'Decision Stump', 'value': 'decision_stump'},
+            {'label': 'Decision Tree (Depth: 2)', 'value': 'vanilla_decision_tree'},
+            {'label': 'Decision Tree (Depth: 3)', 'value': 'vanilla_forest'},
+            {'label': 'Decision Tree (Depth: 4)', 'value': 'opto_forest'},
+            {'label': 'Optimized Decision Tree', 'value': 'opto_decision_tree'},
+        ],
+        value= 'decision_stump'
     ),
-    ],
-)
-
-@app.callback(
-    [Output('table', 'columns'),
-    Output('table', 'data')],
-    [Input('model_selection_dropdown', 'value')])
-def update_output(value):
-    data = show_df.drop(columns = ['prediction'])
-    data['prediction'] = models[value].predict(X_test)
-    cols = [{"name": i, "id": i} for i in data.columns]
-    return cols, data.to_dict('records')
-
-column2 = dbc.Col(
-    [
     html.Div(
         id = 'div_2',
         style={'marginBottom': 25, 'marginTop': 25}
@@ -179,35 +181,22 @@ column2 = dbc.Col(
                 }
             ],
         ),
-        dcc.Markdown(
-            """#### Select Model"""
-        ),
-        dcc.Dropdown(
-            id = 'model_selection_dropdown',
-            options=[
-                {'label': 'Decision Stump', 'value': 'decision_stump'},
-                {'label': 'Decision Tree (Depth: 2)', 'value': 'vanilla_decision_tree'},
-                {'label': 'Decision Tree (Depth: 3)', 'value': 'vanilla_forest'},
-                {'label': 'Decision Tree (Depth: 4)', 'value': 'opto_forest'},
-                {'label': 'Optomized Decision Tree', 'value': 'opto_decision_tree'},
-            ],
-            value= 'decision_stump'
-        ),
-])
+    ]
+)
 
 
+# Update Cytoscape elements callback
 @app.callback(
     Output('cytoscape-layout-4','elements'),
-    [Input('table', 'rows'),
-     Input('table', 'selected_rows'),
+    [Input('button', 'n_clicks'),
      Input('model_selection_dropdown', 'value')],
     [State('cytoscape-layout-4', 'elements')])
-def f(rows, selected_rows, value, elements):
-    if len(selected_rows) > 0:
+def f(selected_rows, value, elements):
+    if selected_rows:
         elements = generate_cyto_elements(
             models[value],
             X_test,
-            selected_rows[0],
+            numpy.random.randint(0, len(X_test)),
         )
     else:
         elements = generate_cyto_elements(
@@ -216,6 +205,7 @@ def f(rows, selected_rows, value, elements):
             0,
         )
     return elements
+
 
 
 layout = dbc.Row([column1, column2])
