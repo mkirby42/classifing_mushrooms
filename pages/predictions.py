@@ -196,7 +196,7 @@ def f(selected_rows, value, elements):
         elements = generate_cyto_elements(
             models[value],
             X_test,
-            numpy.random.randint(0, len(X_test)),
+            np.random.randint(0, len(X_test)),
         )
     else:
         elements = generate_cyto_elements(
